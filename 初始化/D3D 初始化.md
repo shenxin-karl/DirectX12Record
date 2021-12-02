@@ -44,7 +44,7 @@ ComPtr<IDXGIFactory4>		dxgiFactory_;
 ComPtr<ID3D12Device>		d3dDevice_;
 
 ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory_));
-HRESULT hr = D3D12CreateDevice(nullptr, D3D12_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3dDevice_));
+HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3dDevice_));
 if (FAILED(hr)) {		// 创建失败.使用 WARP 设备
     ComPtr<IDXGIAdapter>  pWarpAdapter;
     ThrowIfFailed(dxgiFactory_->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
@@ -314,7 +314,7 @@ void CreateRtvAndDsvDescriptorHeaps() {
     ));
     
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
-    dsvHeapDesc.NumDescriptor = kSwapChainCount_;
+    dsvHeapDesc.NumDescriptor = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRITPOR_FLAG_NONE;
     dsvHeapDesc.NodeMask = 0;
@@ -368,7 +368,9 @@ void onResize() {
     currBackBuffer_ = 0;
     
     // step5 获得 RTV 缓冲区视图
-    auto rtvHeapHandle = rtvHeap_->GetCPUDescritproHandleForHeapStart();
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(
+        rtvHeap_->GetCPUDescritproHandleForHeapStart()
+    );
     for (int i = 0; i < kSwapChainBufferCount; ++i) {
         ThrowIfFailed(swapChain_->GetBuffer(
             i, 
@@ -477,8 +479,11 @@ void update() {
     commandList_->RSSetViewports(1, &screenViewport_);
     commandList_->RSSetScissorRects(1, &scissiorRect_);
 	// step5
-    commandList_->ClearRenderTargetView(CurrentBackBufferView());
-    commandList_->ClearDepthStencilView(DepthStencilView());
+	pCommandList_->ClearRenderTargetView(currentBackBufferView(), 			
+	DX::Colors::LightBlue, 0, nullptr);
+	pCommandList_->ClearDepthStencilView(depthStencilBufferView(),
+		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr
+	);
     // step6
     commandList_->OMSetRenderTarget(
         1, &CurrentBackBufferView(), 
